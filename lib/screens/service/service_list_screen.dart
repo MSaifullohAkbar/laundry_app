@@ -18,6 +18,14 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ServiceProvider>().fetchServices();
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -56,6 +64,34 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
         children: [
           Consumer<ServiceProvider>(
             builder: (ctx, prov, _) {
+              if (prov.isLoading) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 60),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+              if (prov.services.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 80),
+                    child: Column(
+                      children: [
+                        Icon(Icons.local_laundry_service,
+                            size: 64, color: AppColors.onSurfaceVariant),
+                        const SizedBox(height: 16),
+                        const Text('Belum ada layanan',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        const Text('Tekan "Tambah Layanan" untuk mulai',
+                            style: TextStyle(color: AppColors.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                );
+              }
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -63,21 +99,24 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        _buildCategory(
-                          'Kiloan Reguler',
-                          Icons.scale,
-                          AppColors.secondaryFixed,
-                          prov.kiloanServices,
-                          isGrid: true,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildCategory(
-                          'Satuan Premium',
-                          Icons.checkroom,
-                          AppColors.tertiaryFixed,
-                          prov.satuanServices,
-                          isGrid: true,
-                        ),
+                        if (prov.kiloanServices.isNotEmpty)
+                          _buildCategory(
+                            'Kiloan Reguler',
+                            Icons.scale,
+                            AppColors.secondaryFixed,
+                            prov.kiloanServices,
+                            isGrid: true,
+                          ),
+                        if (prov.kiloanServices.isNotEmpty && prov.satuanServices.isNotEmpty)
+                          const SizedBox(height: 24),
+                        if (prov.satuanServices.isNotEmpty)
+                          _buildCategory(
+                            'Satuan Premium',
+                            Icons.checkroom,
+                            AppColors.tertiaryFixed,
+                            prov.satuanServices,
+                            isGrid: true,
+                          ),
                       ]),
                     ),
                   ),
@@ -90,18 +129,20 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
             left: 0,
             right: 0,
             child: BottomActionBar(
-              leftInfo: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryFixed,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: const Text(
-                  'Total: 8 Item',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+              leftInfo: Consumer<ServiceProvider>(
+                builder: (ctx, prov, _) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryFixed,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    'Total: ${prov.services.length} Layanan',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
@@ -124,6 +165,63 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
     List<ServiceType> services, {
     bool isGrid = false,
   }) {
+    void showActionMenu(BuildContext context, ServiceType service) {
+      showModalBottomSheet(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit, color: AppColors.primary),
+                title: const Text('Edit Layanan'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/services/edit/${service.id}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.error),
+                title: const Text('Hapus Layanan', style: TextStyle(color: AppColors.error)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (dCtx) => AlertDialog(
+                      title: const Text('Hapus Layanan'),
+                      content: Text('Apakah Anda yakin ingin menghapus layanan ${service.name}?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dCtx, false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dCtx, true),
+                          child: const Text('Hapus', style: TextStyle(color: AppColors.error)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && context.mounted) {
+                    try {
+                      await context.read<ServiceProvider>().deleteService(service.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Layanan berhasil dihapus'), backgroundColor: AppColors.secondary),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal menghapus layanan'), backgroundColor: AppColors.error),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,6 +259,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
           itemBuilder: (ctx, i) => ServiceCard(
             service: services[i],
             isGridMode: true,
+            onTap: () => showActionMenu(context, services[i]),
             onAdd: () {},
           ),
         ),

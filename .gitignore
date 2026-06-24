@@ -18,15 +18,14 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code (uncomment jika tidak ingin push konfigurasi VS Code)
 #.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
@@ -44,5 +43,38 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android local machine config (berisi path SDK lokal, tidak boleh di-push)
+android/local.properties
+android/.gradle/
+android/.kotlin/
+
+# Debug info / build symbols
+/debug-info/
+
+# Environment variables (berisi API key & secrets, JANGAN DI-PUSH!)
 .env
-.gitignore
+
+# File test sementara
+test_login.dart
+test_status.dart
+lib/test_supabase.dart
+body.json
+
+# File viewer sementara
+erd_viewer.html
+
+# Dokumentasi internal (catatan RBAC, arsitektur internal)
+.agents/
+IMPLEMENTASI_RBAC.md
+QUICK_START_RBAC.md
+RBAC_ARCHITECTURE.md
+RBAC_CHECKLIST.md
+RBAC_PROJECT_STRUCTURE.md
+RBAC_SUMMARY.md
+README_RBAC.md
+
+# Database / SQL schema (internal, tidak perlu di-push ke GitHub publik)
+/database/
+
+# DevTools config (preferensi IDE lokal)
+devtools_options.yaml

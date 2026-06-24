@@ -5,16 +5,10 @@ import '../../config/app_theme.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/common/gradient_app_bar.dart';
 import '../../widgets/common/bottom_action_bar.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_helpers.dart';
 
 class NewTransactionScreen extends StatelessWidget {
   const NewTransactionScreen({super.key});
-
-  String _formatRupiah(double amount) {
-    return NumberFormat.currency(
-            locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
-        .format(amount);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +52,7 @@ class NewTransactionScreen extends StatelessWidget {
                               fontSize: 12,
                               color: AppColors.onSurfaceVariant)),
                       Text(
-                        _formatRupiah(provider.cartSubtotal),
+                        FormatHelper.formatRupiah(provider.cartSubtotal),
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 20,
@@ -72,15 +66,28 @@ class NewTransactionScreen extends StatelessWidget {
                     icon: Icons.shopping_cart_checkout,
                     isDisabled: !provider.canCheckout,
                     onPressed: provider.canCheckout
-                        ? () {
-                            provider.completeTransaction();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Transaksi berhasil dibuat!'),
-                                backgroundColor: AppColors.secondary,
-                              ),
-                            );
-                            context.go('/');
+                        ? () async {
+                            try {
+                              await provider.completeTransaction(null); // Temporarily null, can build payment picker later
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Transaksi berhasil dibuat!'),
+                                    backgroundColor: AppColors.secondary,
+                                  ),
+                                );
+                                context.go('/');
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Gagal: $e'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                              }
+                            }
                           }
                         : null,
                   ),
@@ -98,7 +105,7 @@ class NewTransactionScreen extends StatelessWidget {
     final customer = provider.cartCustomer;
 
     return GestureDetector(
-      onTap: () => context.go('/transaction/pick-customer'),
+      onTap: () => context.push('/transaction/pick-customer'),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
@@ -184,7 +191,7 @@ class NewTransactionScreen extends StatelessWidget {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: () => context.go('/transaction/pick-service'),
+              onTap: () => context.push('/transaction/pick-service'),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 8),
@@ -296,7 +303,7 @@ class NewTransactionScreen extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15)),
                     Text(
-                      '${item.quantity} ${item.service.unit} × Rp ${_formatSimple(item.service.price)}',
+                      '${item.quantity} ${item.service.unit} × Rp ${FormatHelper.formatSimplePrice(item.service.price)}',
                       style: const TextStyle(
                           color: AppColors.onSurfaceVariant, fontSize: 13),
                     ),
@@ -304,7 +311,7 @@ class NewTransactionScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatRupiah(item.subtotal),
+                FormatHelper.formatRupiah(item.subtotal),
                 style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -315,12 +322,5 @@ class NewTransactionScreen extends StatelessWidget {
         );
       }).toList(),
     );
-  }
-
-  String _formatSimple(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
   }
 }

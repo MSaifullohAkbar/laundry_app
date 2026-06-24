@@ -21,35 +21,35 @@ class ReportMenuScreen extends StatelessWidget {
         Icons.payments,
         AppColors.tertiaryContainer,
         'Laporan pengeluaran',
-        '/reports',
+        '',
       ),
       _ReportMenu(
         'Pelanggan',
         Icons.group,
         AppColors.secondaryContainer,
         'Laporan pelanggan',
-        '/customers',
+        '',
       ),
       _ReportMenu(
         'Excel Export',
-        Icons.download,
-        AppColors.surfaceContainerHigh,
+        Icons.table_chart,
+        const Color(0xFFD7F0DC),
         'Unduh laporan Excel',
-        '/reports',
+        '/reports/excel-export',
       ),
       _ReportMenu(
         'Kasir',
         Icons.point_of_sale,
         AppColors.secondaryFixed,
         'Laporan per kasir',
-        '/reports',
+        '',
       ),
       _ReportMenu(
-        'Metode Bayar',
-        Icons.account_balance_wallet,
-        AppColors.primaryFixedDim,
-        'Laporan metode pembayaran',
-        '/reports',
+        'Pelanggan Terbaik',
+        Icons.emoji_events,
+        AppColors.tertiaryFixed,
+        'Analisis SAW pelanggan',
+        '/reports/saw',
       ),
     ];
 
@@ -76,7 +76,18 @@ class ReportMenuScreen extends StatelessWidget {
 
   Widget _buildMenuCard(BuildContext context, _ReportMenu menu) {
     return GestureDetector(
-      onTap: () => context.go(menu.route),
+      onTap: () {
+        if (menu.route.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fitur ini belum tersedia'),
+              backgroundColor: AppColors.tertiary,
+            ),
+          );
+          return;
+        }
+        context.go(menu.route);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,

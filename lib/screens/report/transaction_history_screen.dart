@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/common/gradient_app_bar.dart';
-import '../../widgets/cards/customer_card.dart';
+import '../../widgets/cards/transaction_card.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -26,13 +26,26 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     'Batal',
   ];
 
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/reports/transactions');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
       backgroundColor: AppColors.surface,
       appBar: GradientAppBar(
         title: 'Riwayat Transaksi',
-        onBack: () => context.go('/reports'),
+        onBack: _handleBack,
       ),
       body: Column(
         children: [
@@ -42,7 +55,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               builder: (ctx, provider, _) {
                 final statusKey = _selectedFilter.toLowerCase();
                 final txs = provider.getByStatus(
-                    _selectedFilter == 'Semua' ? 'semua' : statusKey);
+                  _selectedFilter == 'Semua' ? 'semua' : statusKey,
+                );
 
                 if (txs.isEmpty) {
                   return Center(
@@ -56,8 +70,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                             color: AppColors.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(24),
                           ),
-                          child: const Icon(Icons.history,
-                              color: AppColors.onSurfaceVariant, size: 40),
+                          child: const Icon(
+                            Icons.history,
+                            color: AppColors.onSurfaceVariant,
+                            size: 40,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -76,17 +93,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.all(16),
                   itemCount: txs.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (ctx, i) => TransactionCard(
                     transaction: txs[i],
-                    onTap: () =>
-                        context.go('/transaction/${txs[i].id}'),
+                    onTap: () => context.go('/transaction/${txs[i].id}'),
                   ),
                 );
               },
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -107,7 +125,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 6),
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: selected
                       ? AppColors.primary
@@ -117,9 +137,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 child: Text(
                   f,
                   style: TextStyle(
-                    color: selected
-                        ? Colors.white
-                        : AppColors.onSurfaceVariant,
+                    color: selected ? Colors.white : AppColors.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),

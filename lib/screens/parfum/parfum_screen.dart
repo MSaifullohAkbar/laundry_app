@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
-import '../../providers/report_provider.dart';
-import '../../widgets/common/bottom_action_bar.dart';
+import '../../providers/parfum_provider.dart';
 
 class ParfumScreen extends StatefulWidget {
   const ParfumScreen({super.key});
@@ -14,7 +13,15 @@ class ParfumScreen extends StatefulWidget {
 
 class _ParfumScreenState extends State<ParfumScreen> {
   final _searchCtrl = TextEditingController();
-  int _selectedTab = 3;
+  int _selectedTab = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ParfumProvider>().fetchParfums();
+    });
+  }
 
   @override
   void dispose() {
@@ -50,7 +57,7 @@ class _ParfumScreenState extends State<ParfumScreen> {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         const Text(
@@ -114,16 +121,58 @@ class _ParfumScreenState extends State<ParfumScreen> {
               );
             },
           ),
+          // Fixed bottom button "Tambah Parfum Baru"
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: BottomActionBar(
-              rightAction: GradientButton(
-                label: 'Tambah Parfum Baru',
-                icon: Icons.add,
-                isFullWidth: true,
-                onPressed: () {},
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: GestureDetector(
+                onTap: () => context.push('/parfum/add'),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.primaryContainer],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    boxShadow: AppShadows.primaryButton,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle_outline,
+                          color: Colors.white, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'Tambah Parfum Baru',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -134,15 +183,13 @@ class _ParfumScreenState extends State<ParfumScreen> {
         onTap: (i) {
           setState(() => _selectedTab = i);
           if (i == 0) context.go('/');
-          if (i == 2) context.go('/reports');
+          if (i == 2) context.go('/settings');
         },
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.point_of_sale), label: 'Kasir'),
           BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long), label: 'Pesanan'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart), label: 'Laporan'),
           BottomNavigationBarItem(
               icon: Icon(Icons.person), label: 'Akun'),
         ],
@@ -154,107 +201,112 @@ class _ParfumScreenState extends State<ParfumScreen> {
     final isOut = p.isOutOfStock;
     final isLow = p.isLowStock;
 
-    return AnimatedOpacity(
-      opacity: isOut ? 0.75 : 1.0,
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          boxShadow: AppShadows.cardLight,
-        ),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: isOut
-                      ? const Icon(Icons.block,
-                          color: AppColors.onSurfaceVariant, size: 26)
-                      : const Icon(Icons.water_drop,
-                          color: AppColors.primary, size: 26),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
-                  color: AppColors.secondary,
-                  onPressed: () {},
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              p.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: isOut
-                        ? AppColors.onSurfaceVariant
-                        : isLow
-                            ? AppColors.error
-                            : AppColors.secondary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isOut
-                      ? 'Stok Habis'
-                      : '${p.stockLiters.toStringAsFixed(1)} L',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isOut
-                        ? AppColors.onSurfaceVariant
-                        : isLow
-                            ? AppColors.error
-                            : AppColors.onSurface,
-                    fontWeight: isLow || isOut
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                  ),
-                ),
-                if (isLow)
+    return GestureDetector(
+      onTap: () => context.push('/parfum/edit/${p.id}'),
+      child: AnimatedOpacity(
+        opacity: isOut ? 0.75 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            boxShadow: AppShadows.cardLight,
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
                   Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: AppColors.errorContainer,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      color:
+                          AppColors.primaryContainer.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Text(
-                      'Hampir Habis',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                    child: isOut
+                        ? const Icon(Icons.block,
+                            color: AppColors.onSurfaceVariant, size: 26)
+                        : const Icon(Icons.water_drop,
+                            color: AppColors.primary, size: 26),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18),
+                    color: AppColors.secondary,
+                    onPressed: () => context.push('/parfum/edit/${p.id}'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                p.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isOut
+                          ? AppColors.onSurfaceVariant
+                          : isLow
+                              ? AppColors.error
+                              : AppColors.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isOut
+                        ? 'Stok Habis'
+                        : '${p.stockLiters.toStringAsFixed(1)} L',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isOut
+                          ? AppColors.onSurfaceVariant
+                          : isLow
+                              ? AppColors.error
+                              : AppColors.onSurface,
+                      fontWeight: isLow || isOut
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                  if (isLow)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorContainer,
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: const Text(
+                        'Hampir Habis',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

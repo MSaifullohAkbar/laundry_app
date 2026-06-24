@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../models/service.dart';
+import '../../utils/format_helpers.dart';
 
 class ServiceCard extends StatefulWidget {
   final ServiceType service;
   final int quantity;
   final VoidCallback? onAdd;
   final VoidCallback? onRemove;
+  final VoidCallback? onTap;
   final bool isGridMode;
 
   const ServiceCard({
@@ -15,6 +17,7 @@ class ServiceCard extends StatefulWidget {
     this.quantity = 0,
     this.onAdd,
     this.onRemove,
+    this.onTap,
     this.isGridMode = false,
   });
 
@@ -28,6 +31,7 @@ class _ServiceCardState extends State<ServiceCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
@@ -130,7 +134,7 @@ class _ServiceCardState extends State<ServiceCard> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Rp ${_formatPrice(widget.service.price)}/${widget.service.unit}',
+                      'Rp ${FormatHelper.formatSimplePrice(widget.service.price)}/${widget.service.unit}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -225,7 +229,7 @@ class _ServiceCardState extends State<ServiceCard> {
             children: [
               Expanded(
                 child: Text(
-                  'Rp ${_formatPrice(widget.service.price)}/${widget.service.unit}',
+                  'Rp ${FormatHelper.formatSimplePrice(widget.service.price)}/${widget.service.unit}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -299,10 +303,4 @@ class _ServiceCardState extends State<ServiceCard> {
     );
   }
 
-  String _formatPrice(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
-  }
 }

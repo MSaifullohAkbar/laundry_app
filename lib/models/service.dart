@@ -29,6 +29,41 @@ class ServiceType {
     this.description,
   });
 
+  factory ServiceType.fromMap(Map<String, dynamic> map) {
+    return ServiceType(
+      id: map['id'],
+      name: map['name'] ?? '',
+      category: map['category'] ?? 'kiloan',
+      price: (map['price'] as num?)?.toDouble() ?? 0,
+      unit: map['unit'] ?? 'kg',
+      includeWash: map['include_wash'] ?? true,
+      includeDry: map['include_dry'] ?? true,
+      includeIron: map['include_iron'] ?? true,
+      imageUrl: map['image_url'],
+      isPremium: map['is_premium'] ?? false,
+      isExpress: map['is_express'] ?? false,
+      durationHours: map['duration_hours'],
+      description: map['description'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'category': category,
+      'price': price,
+      'unit': unit,
+      'include_wash': includeWash,
+      'include_dry': includeDry,
+      'include_iron': includeIron,
+      'image_url': imageUrl,
+      'is_premium': isPremium,
+      'is_express': isExpress,
+      'duration_hours': durationHours,
+      'description': description,
+    };
+  }
+
   String get formattedDuration {
     if (durationHours == null) return '2 Hari';
     if (durationHours! < 24) return '$durationHours Jam';
@@ -67,86 +102,3 @@ class ServiceType {
     );
   }
 }
-
-final List<ServiceType> dummyServices = [
-  const ServiceType(
-    id: 's1',
-    name: 'Cuci Komplit Reguler',
-    category: 'kiloan',
-    price: 12000,
-    unit: 'kg',
-    durationHours: 48,
-    description: 'Cuci, kering, dan setrika',
-  ),
-  const ServiceType(
-    id: 's2',
-    name: 'Cuci Komplit Express',
-    category: 'kiloan',
-    price: 20000,
-    unit: 'kg',
-    isExpress: true,
-    durationHours: 12,
-    description: 'Cuci, kering, dan setrika cepat',
-  ),
-  const ServiceType(
-    id: 's3',
-    name: 'Cuci Saja',
-    category: 'kiloan',
-    price: 7000,
-    unit: 'kg',
-    includeDry: false,
-    includeIron: false,
-    durationHours: 24,
-    description: 'Hanya pencucian',
-  ),
-  const ServiceType(
-    id: 's4',
-    name: 'Setrika Saja',
-    category: 'kiloan',
-    price: 5000,
-    unit: 'kg',
-    includeWash: false,
-    includeDry: false,
-    durationHours: 12,
-    description: 'Hanya setrika',
-  ),
-  const ServiceType(
-    id: 's5',
-    name: 'Jas / Blazer',
-    category: 'satuan',
-    price: 45000,
-    unit: 'pcs',
-    isPremium: true,
-    durationHours: 72,
-    description: 'Dry clean untuk jas dan blazer',
-  ),
-  const ServiceType(
-    id: 's6',
-    name: 'Gaun / Dress',
-    category: 'satuan',
-    price: 55000,
-    unit: 'pcs',
-    isPremium: true,
-    durationHours: 72,
-    description: 'Dry clean untuk gaun dan dress',
-  ),
-  const ServiceType(
-    id: 's7',
-    name: 'Sepatu',
-    category: 'satuan',
-    price: 35000,
-    unit: 'pcs',
-    isPremium: true,
-    durationHours: 48,
-    description: 'Cuci sepatu profesional',
-  ),
-  const ServiceType(
-    id: 's8',
-    name: 'Selimut / Bed Cover',
-    category: 'satuan',
-    price: 30000,
-    unit: 'pcs',
-    durationHours: 48,
-    description: 'Cuci selimut dan bed cover',
-  ),
-];

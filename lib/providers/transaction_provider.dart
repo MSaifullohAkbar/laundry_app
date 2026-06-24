@@ -2,16 +2,13 @@ import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
 import '../models/customer.dart';
 import '../models/service.dart';
+import '../services/supabase_service.dart';
 
-class CartItem {
-  final ServiceType service;
-  double quantity;
-  CartItem({required this.service, this.quantity = 1});
-  double get subtotal => service.price * quantity;
-}
+import '../models/cart_item.dart';
 
 class TransactionProvider extends ChangeNotifier {
-  final List<Transaction> _transactions = List.from(dummyTransactions);
+  List<Transaction> _transactions = [];
+  bool _isLoading = false;
 
   // Cart state for new transaction
   Customer? _cartCustomer;
@@ -20,6 +17,7 @@ class TransactionProvider extends ChangeNotifier {
   List<Transaction> get transactions => _transactions;
   Customer? get cartCustomer => _cartCustomer;
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
+  bool get isLoading => _isLoading;
 
   double get cartSubtotal =>
       _cartItems.fold(0, (sum, item) => sum + item.subtotal);
@@ -68,36 +66,146 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void completeTransaction() {
+  Future<void> fetchTransactions() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await supabase
+          .from('transactions')
+          .select('''
+            *,
+            customers(*),
+            transaction_items(
+              *,
+              services(*)
+            )
+          ''')
+          .order('created_at', ascending: false);
+
+      _transactions = response.map((data) => Transaction.fromMap(data)).toList();
+    } catch (e) {
+      debugPrint('Error fetching transactions: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> completeTransaction(String? paymentMethodId) async {
     if (_cartCustomer == null || _cartItems.isEmpty) return;
 
     final now = DateTime.now();
-    final items = _cartItems
-        .map((c) => TransactionItem(
-              service: c.service,
-              quantity: c.quantity,
-              subtotal: c.subtotal,
-            ))
-        .toList();
-
     final total = cartSubtotal;
-    final newTx = Transaction(
-      id: 'tx_${now.millisecondsSinceEpoch}',
-      invoiceNumber:
-          'INV-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(_transactions.length + 1).toString().padLeft(3, '0')}',
-      customer: _cartCustomer!,
-      items: items,
-      subtotal: total,
-      total: total,
-      status: 'antrian',
-      isPaid: false,
-      createdAt: now,
-      estimatedDone: now.add(const Duration(days: 2)),
-      cashierName: 'Admin',
-    );
+    
+    // Generate unique invoice number using timestamp
+    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final uniqueSuffix = now.microsecondsSinceEpoch.toString().substring(8);
+    final invoiceNumber = 'INV-$dateStr-$uniqueSuffix';
 
-    _transactions.insert(0, newTx);
-    clearCart();
+    // Calculate estimated completion from longest service duration
+    int maxDurationHours = 48; // default 2 days
+    for (final item in _cartItems) {
+      final hours = item.service.durationHours ?? 48;
+      if (hours > maxDurationHours) maxDurationHours = hours;
+    }
+    final estimatedCompletion = now.add(Duration(hours: maxDurationHours));
+
+
+    try {
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        throw Exception('Sesi login tidak valid. Silakan login ulang.');
+      }
+
+      // 1. Insert header to transactions table
+      final txResponse = await supabase.from('transactions').insert({
+        'invoice_number': invoiceNumber,
+        'customer_id': _cartCustomer!.id,
+        'user_id': currentUserId,
+        'payment_method_id': paymentMethodId,
+        'status': 'antrian',
+        'payment_status': paymentMethodId != null ? 'paid' : 'unpaid',
+        'total_amount': total,
+        'discount': 0,
+        'grand_total': total,
+        'estimated_completion': estimatedCompletion.toIso8601String(),
+      }).select('''
+        *,
+        customers(*)
+      ''').single();
+
+      final txId = txResponse['id'];
+
+      // 2. Insert items to transaction_items table
+      final itemsToInsert = _cartItems.map((item) => <String, dynamic>{
+        'transaction_id': txId,
+        'service_id': item.service.id,
+        'quantity': item.quantity,
+        'price_per_unit': item.service.price,
+        'subtotal': item.subtotal,
+      }).toList();
+
+      final itemsResponse = await supabase
+          .from('transaction_items')
+          .insert(itemsToInsert)
+          .select('''
+            *,
+            services(*)
+          ''');
+
+      // 3. Update local state
+      txResponse['transaction_items'] = itemsResponse;
+      final newTx = Transaction.fromMap(txResponse);
+      
+      _transactions.insert(0, newTx);
+      clearCart();
+    } catch (e) {
+      debugPrint('Error saving transaction: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateStatus(String transactionId, String newStatus) async {
+    try {
+      await supabase
+          .from('transactions')
+          .update({'status': newStatus})
+          .eq('id', transactionId);
+
+      final idx = _transactions.indexWhere((t) => t.id == transactionId);
+      if (idx >= 0) {
+        _transactions[idx] = _transactions[idx].copyWith(status: newStatus);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error updating status: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> markAsPaid(String transactionId, String paymentMethodId) async {
+    try {
+      await supabase
+          .from('transactions')
+          .update({
+            'payment_status': 'paid',
+            'payment_method_id': paymentMethodId,
+          })
+          .eq('id', transactionId);
+
+      final idx = _transactions.indexWhere((t) => t.id == transactionId);
+      if (idx >= 0) {
+        _transactions[idx] = _transactions[idx].copyWith(
+          isPaid: true,
+          paymentMethodId: paymentMethodId,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error marking as paid: $e');
+      rethrow;
+    }
   }
 
   // Filtered lists

@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../providers/customer_provider.dart';
+import '../../providers/service_provider.dart';
+import '../../providers/report_provider.dart';
+import '../../providers/parfum_provider.dart';
+import '../../providers/payment_method_provider.dart';
+import '../../providers/store_settings_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,9 +23,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedTab = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CustomerProvider>().fetchCustomers();
+      context.read<ServiceProvider>().fetchServices();
+      context.read<ParfumProvider>().fetchParfums();
+      context.read<PaymentMethodProvider>().fetchMethods();
+      context.read<TransactionProvider>().fetchTransactions();
+      context.read<StoreSettingsProvider>().fetchSettings();
+      context.read<ReportProvider>().fetchReportData();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
+      drawer: _buildDrawer(context),
       body: Stack(
         children: [
           CustomScrollView(
@@ -55,9 +78,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       elevation: 0,
       pinned: false,
       centerTitle: true,
-      leading: IconButton(
-        icon: const Icon(Icons.menu, color: AppColors.primary),
-        onPressed: () {},
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: AppColors.primary),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
       ),
       title: const Text(
         'LaundryKu Kasir',
@@ -88,8 +115,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRevenueCard() {
-    return Consumer<TransactionProvider>(
-      builder: (ctx, provider, _) {
+    return Consumer<ReportProvider>(
+      builder: (ctx, reportProvider, _) {
+        final formatter = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
         return Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -130,14 +162,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.trending_up,
+                        const Icon(Icons.trending_up,
                             color: Colors.white, size: 14),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(
-                          '+15%',
-                          style: TextStyle(
+                          reportProvider.growthPercentage,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -154,14 +186,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 4),
-              Text(
-                'Rp 1.250.000',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              reportProvider.isLoading
+                  ? const SizedBox(
+                      height: 40,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      ),
+                    )
+                  : Text(
+                      formatter.format(reportProvider.totalRevenue),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ],
           ),
         );
@@ -170,50 +210,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStoreInfoCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: AppShadows.cardLight,
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primaryFixed,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.store, color: AppColors.primary, size: 26),
+    return Consumer<StoreSettingsProvider>(
+      builder: (ctx, provider, _) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            boxShadow: AppShadows.cardLight,
           ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LaundryKu Cabang Utama',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryFixed,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Buka: 07.00 – 21.00',
-                  style: TextStyle(
-                      fontSize: 13, color: AppColors.onSurfaceVariant),
+                child: const Icon(Icons.store,
+                    color: AppColors.primary, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      provider.settings.name.isEmpty
+                          ? 'LaundryKu'
+                          : provider.settings.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Buka: 07.00 – 21.00',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.onSurfaceVariant),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/settings'),
+                child: const Text('Ubah',
+                    style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => context.go('/settings'),
-            child: const Text('Ubah',
-                style: TextStyle(
-                    color: AppColors.primary, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -275,19 +325,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildMenuGrid() {
-    final menus = [
+    // Mengambil auth provider untuk cek role
+    final authProvider = context.watch<AuthProvider>();
+    final isAdmin = authProvider.isAdmin;
+
+    // Menu yang hanya bisa diakses admin
+    final adminOnlyMenus = {'Layanan', 'Parfum', 'Metode Bayar', 'Pengaturan'};
+    
+    final allMenus = [
       _MenuItem('Layanan', Icons.local_laundry_service,
           AppColors.primaryContainer, '/services'),
       _MenuItem('Riwayat', Icons.history, AppColors.secondaryContainer,
           '/reports/history'),
-      _MenuItem(
-          'Laporan', Icons.bar_chart, AppColors.tertiaryFixed, '/reports'),
+      _MenuItem('Laporan', Icons.bar_chart, AppColors.tertiaryFixed, '/reports'),
       _MenuItem('Parfum', Icons.water_drop,
           AppColors.surfaceContainerHighest, '/parfum'),
-      _MenuItem(
-          'Pelanggan', Icons.groups, AppColors.primaryFixedDim, '/customers'),
-      _MenuItem('Pengeluaran', Icons.payments, AppColors.errorContainer, '/'),
+      _MenuItem('Pelanggan', Icons.groups, AppColors.primaryFixedDim, '/customers'),
+      _MenuItem('Metode Bayar', Icons.account_balance_wallet,
+          AppColors.secondaryFixed, '/payment-methods'),
+      _MenuItem('Pengeluaran', Icons.payments, AppColors.errorContainer, ''),
+      _MenuItem('Pengaturan', Icons.settings,
+          AppColors.surfaceContainerHigh, '/settings'),
     ];
+
+    // Filter menu berdasarkan role
+    final menus = isAdmin 
+        ? allMenus 
+        : allMenus.where((menu) => !adminOnlyMenus.contains(menu.label)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +378,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildMenuTile(_MenuItem item) {
     return GestureDetector(
-      onTap: () => context.go(item.route),
+      onTap: () {
+        if (item.route.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fitur ini belum tersedia'),
+              backgroundColor: AppColors.tertiary,
+            ),
+          );
+          return;
+        }
+        context.push(item.route);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
@@ -354,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       left: 24,
       right: 24,
       child: GestureDetector(
-        onTap: () => context.go('/transaction/new'),
+        onTap: () => context.push('/transaction/new'),
         child: Container(
           height: 58,
           decoration: BoxDecoration(
@@ -393,20 +468,125 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: (i) {
         setState(() => _selectedTab = i);
         switch (i) {
-          case 2:
-            context.go('/reports');
-            break;
-          case 3:
-            context.go('/settings');
+          case 1:
+            context.go('/account');
             break;
         }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'Kasir'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Pesanan'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Laporan'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
       ],
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final isAdmin = authProvider.isAdmin;
+    final currentUser = authProvider.currentUser;
+
+    return Drawer(
+      backgroundColor: AppColors.surface,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryContainer],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.primaryFixed,
+                  child: Text(
+                    currentUser?.displayName.isNotEmpty == true 
+                        ? currentUser!.displayName[0].toUpperCase() 
+                        : 'U',
+                    style: const TextStyle(
+                      color: AppColors.onPrimaryContainer,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentUser?.displayName ?? 'User',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        currentUser?.email ?? '',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          currentUser?.roleLabel ?? '',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(top: 8),
+              children: [
+                if (isAdmin) _buildDrawerItem(context, 'Layanan', Icons.local_laundry_service, '/services'),
+                _buildDrawerItem(context, 'Riwayat Transaksi', Icons.history, '/reports/history'),
+                _buildDrawerItem(context, 'Laporan', Icons.bar_chart, '/reports'),
+                if (isAdmin) _buildDrawerItem(context, 'Parfum', Icons.water_drop, '/parfum'),
+                _buildDrawerItem(context, 'Pelanggan', Icons.groups, '/customers'),
+                if (isAdmin) _buildDrawerItem(context, 'Metode Bayar', Icons.account_balance_wallet, '/payment-methods'),
+                if (isAdmin) _buildDrawerItem(context, 'Pengaturan', Icons.settings, '/settings'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(BuildContext context, String title, IconData icon, String route) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        context.push(route);
+      },
     );
   }
 }

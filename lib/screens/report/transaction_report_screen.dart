@@ -2,20 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_helpers.dart';
 import '../../config/app_theme.dart';
 import '../../providers/report_provider.dart';
 import '../../providers/transaction_provider.dart';
-import '../../widgets/cards/customer_card.dart';
+import '../../widgets/cards/transaction_card.dart';
 
 class TransactionReportScreen extends StatelessWidget {
   const TransactionReportScreen({super.key});
-
-  String _formatRupiah(double amount) {
-    return NumberFormat.currency(
-            locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
-        .format(amount);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +19,19 @@ class TransactionReportScreen extends StatelessWidget {
         backgroundColor: Colors.white.withValues(alpha: 0.9),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: AppColors.primary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.primary,
+            size: 20,
+          ),
           onPressed: () => context.go('/reports'),
         ),
         title: const Text(
           'Laporan Transaksi',
           style: TextStyle(
-              color: AppColors.primary, fontWeight: FontWeight.w700),
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -67,7 +66,9 @@ class TransactionReportScreen extends StatelessWidget {
                     const Text(
                       'Data transaksi terkini',
                       style: TextStyle(
-                          color: AppColors.onSurfaceVariant, fontSize: 14),
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -107,26 +108,32 @@ class TransactionReportScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...txProv.transactions.take(4).map((tx) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: TransactionCard(
-                            transaction: tx,
-                            onTap: () =>
-                                context.go('/transaction/${tx.id}'),
+                    ...txProv.transactions
+                        .take(4)
+                        .map(
+                          (tx) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: TransactionCard(
+                              transaction: tx,
+                              onTap: () => context.go('/transaction/${tx.id}'),
+                            ),
                           ),
-                        )),
+                        ),
                     const SizedBox(height: 24),
                     Center(
                       child: GestureDetector(
                         onTap: () => context.go('/reports/history'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 28, vertical: 14),
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(
-                                color: AppColors.primary, width: 2),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: const Text(
                             'Lihat Semua Transaksi',
@@ -153,32 +160,36 @@ class TransactionReportScreen extends StatelessWidget {
     final periods = ['Hari Ini', 'Minggu', 'Bulan'];
     return Row(
       children: [
-        ...periods.map((p) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => prov.setPeriod(p),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
+        ...periods.map(
+          (p) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => prov.setPeriod(p),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: prov.selectedPeriod == p
+                      ? AppColors.primary
+                      : AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  p,
+                  style: TextStyle(
                     color: prov.selectedPeriod == p
-                        ? AppColors.primary
-                        : AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    p,
-                    style: TextStyle(
-                      color: prov.selectedPeriod == p
-                          ? Colors.white
-                          : AppColors.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                        ? Colors.white
+                        : AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
               ),
-            )),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -202,16 +213,17 @@ class TransactionReportScreen extends StatelessWidget {
                 const Text(
                   'Total Omzet',
                   style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 FittedBox(
                   alignment: Alignment.centerLeft,
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    _formatRupiah(prov.totalRevenue),
+                    FormatHelper.formatRupiah(prov.totalRevenue),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -222,7 +234,9 @@ class TransactionReportScreen extends StatelessWidget {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -230,8 +244,11 @@ class TransactionReportScreen extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.trending_up,
-                          color: Colors.white, size: 14),
+                      const Icon(
+                        Icons.trending_up,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         prov.growthPercentage,
@@ -268,8 +285,11 @@ class TransactionReportScreen extends StatelessWidget {
                     color: AppColors.secondaryContainer,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.check_circle,
-                      color: AppColors.secondary, size: 24),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: AppColors.secondary,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -299,9 +319,32 @@ class TransactionReportScreen extends StatelessWidget {
 
   Widget _buildChart(ReportProvider prov) {
     final data = prov.chartData;
+
+    // Guard: no data available
+    if (data.isEmpty) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppShadows.cardLight,
+        ),
+        padding: const EdgeInsets.all(16),
+        child: const Center(
+          child: Text(
+            'Belum ada data pendapatan',
+            style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
+          ),
+        ),
+      );
+    }
+
     final maxVal = data
         .map((d) => d['amount'] as double)
         .reduce((a, b) => a > b ? a : b);
+
+    // Prevent division by zero for horizontalInterval
+    final safeMaxVal = maxVal > 0 ? maxVal : 1.0;
 
     return Container(
       height: 200,
@@ -316,15 +359,14 @@ class TransactionReportScreen extends StatelessWidget {
         children: [
           const Text(
             'Pendapatan Harian',
-            style:
-                TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           const SizedBox(height: 12),
           Expanded(
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: maxVal * 1.2,
+                maxY: safeMaxVal * 1.2,
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
@@ -347,16 +389,19 @@ class TransactionReportScreen extends StatelessWidget {
                     ),
                   ),
                   leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: maxVal / 4,
+                  horizontalInterval: safeMaxVal / 4,
                   getDrawingHorizontalLine: (_) => FlLine(
                     color: AppColors.outlineVariant.withValues(alpha: 0.5),
                     strokeWidth: 1,

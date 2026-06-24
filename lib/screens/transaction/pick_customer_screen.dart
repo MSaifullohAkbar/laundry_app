@@ -51,7 +51,7 @@ class _PickCustomerScreenState extends State<PickCustomerScreen> {
                           isSelected: isSelected,
                           onTap: () {
                             txProv.setCartCustomer(c);
-                            context.go('/transaction/new');
+                            context.pop();
                           },
                         );
                       },
@@ -67,7 +67,7 @@ class _PickCustomerScreenState extends State<PickCustomerScreen> {
                       label: 'Tambah Pelanggan Baru',
                       icon: Icons.person_add,
                       isFullWidth: true,
-                      onPressed: () => context.go('/customers/add'),
+                      onPressed: () => context.push('/customers/add'),
                     ),
                   ),
                 ),
@@ -100,7 +100,7 @@ class _PickCustomerScreenState extends State<PickCustomerScreen> {
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new,
                         color: Colors.white, size: 20),
-                    onPressed: () => context.go('/transaction/new'),
+                    onPressed: () => context.pop(),
                   ),
                   const Expanded(
                     child: Column(

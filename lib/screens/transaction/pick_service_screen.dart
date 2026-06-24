@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import '../../utils/format_helpers.dart';
 import '../../config/app_theme.dart';
 import '../../providers/service_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -26,11 +26,6 @@ class _PickServiceScreenState extends State<PickServiceScreen> {
     super.dispose();
   }
 
-  String _formatRupiah(double amount) {
-    return NumberFormat.currency(
-            locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
-        .format(amount);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +86,7 @@ class _PickServiceScreenState extends State<PickServiceScreen> {
                                     fontSize: 12,
                                     color: AppColors.onSurfaceVariant)),
                             Text(
-                              _formatRupiah(txProv.cartSubtotal),
+                              FormatHelper.formatRupiah(txProv.cartSubtotal),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 18,
@@ -104,7 +99,7 @@ class _PickServiceScreenState extends State<PickServiceScreen> {
                           label: 'Tambah Layanan ($count)',
                           icon: Icons.add_shopping_cart,
                           onPressed: count > 0
-                              ? () => context.go('/transaction/new')
+                              ? () => context.pop()
                               : null,
                           isDisabled: count == 0,
                         ),
@@ -141,7 +136,7 @@ class _PickServiceScreenState extends State<PickServiceScreen> {
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new,
                         color: Colors.white, size: 20),
-                    onPressed: () => context.go('/transaction/new'),
+                    onPressed: () => context.pop(),
                   ),
                   const Expanded(
                     child: Text(

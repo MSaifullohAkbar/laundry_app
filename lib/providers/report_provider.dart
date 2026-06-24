@@ -1,98 +1,123 @@
 import 'package:flutter/foundation.dart';
-import '../models/parfum.dart';
-
-class ParfumProvider extends ChangeNotifier {
-  final List<Parfum> _parfums = List.from(dummyParfums);
-  String _searchQuery = '';
-
-  List<Parfum> get parfums => _parfums;
-
-  List<Parfum> get filteredParfums {
-    if (_searchQuery.isEmpty) return _parfums;
-    return _parfums
-        .where(
-            (p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-  }
-
-  void setSearchQuery(String query) {
-    _searchQuery = query;
-    notifyListeners();
-  }
-
-  void addParfum(Parfum parfum) {
-    _parfums.add(parfum);
-    notifyListeners();
-  }
-
-  void updateStock(String id, double newStock) {
-    final idx = _parfums.indexWhere((p) => p.id == id);
-    if (idx >= 0) {
-      _parfums[idx] = _parfums[idx].copyWith(stockLiters: newStock);
-      notifyListeners();
-    }
-  }
-}
+import '../services/supabase_service.dart';
 
 class ReportProvider extends ChangeNotifier {
   String _selectedPeriod = 'Hari Ini';
+  bool _isLoading = false;
+
+  double _totalRevenue = 0;
+  int _completedTransactions = 0;
+  double _previousRevenue = 0;
+  List<Map<String, dynamic>> _chartData = [];
 
   String get selectedPeriod => _selectedPeriod;
+  bool get isLoading => _isLoading;
+  double get totalRevenue => _totalRevenue;
+  int get completedTransactions => _completedTransactions;
+  List<Map<String, dynamic>> get chartData => _chartData;
+
+  String get growthPercentage {
+    if (_previousRevenue == 0) return '+0%';
+    final growth = ((_totalRevenue - _previousRevenue) / _previousRevenue) * 100;
+    final sign = growth >= 0 ? '+' : '';
+    return '$sign${growth.toStringAsFixed(0)}%';
+  }
 
   void setPeriod(String period) {
     _selectedPeriod = period;
     notifyListeners();
+    fetchReportData();
   }
 
-  // Simulated stats
-  double get totalRevenue {
-    switch (_selectedPeriod) {
-      case 'Hari Ini':
-        return 4250000;
-      case 'Minggu':
-        return 18500000;
-      case 'Bulan':
-        return 75000000;
-      default:
-        return 4250000;
+  Future<void> fetchReportData() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      DateTime startDate;
+      DateTime prevStartDate;
+      DateTime prevEndDate;
+
+      switch (_selectedPeriod) {
+        case 'Minggu':
+          startDate = now.subtract(const Duration(days: 7));
+          prevStartDate = now.subtract(const Duration(days: 14));
+          prevEndDate = startDate;
+          break;
+        case 'Bulan':
+          startDate = DateTime(now.year, now.month, 1);
+          // Handle January correctly
+          final prevMonth = now.month == 1 ? 12 : now.month - 1;
+          final prevYear = now.month == 1 ? now.year - 1 : now.year;
+          prevStartDate = DateTime(prevYear, prevMonth, 1);
+          prevEndDate = startDate;
+          break;
+        default: // Hari Ini
+          startDate = DateTime(now.year, now.month, now.day);
+          prevStartDate = startDate.subtract(const Duration(days: 1));
+          prevEndDate = startDate;
+          break;
+      }
+
+      // Fetch current period
+      final currentResponse = await supabase
+          .from('transactions')
+          .select('grand_total, status, created_at')
+          .gte('created_at', startDate.toIso8601String())
+          .lte('created_at', now.toIso8601String());
+
+      _totalRevenue = 0;
+      _completedTransactions = 0;
+      for (final tx in currentResponse) {
+        if (tx['status'] == 'selesai') {
+          _totalRevenue += (tx['grand_total'] as num?)?.toDouble() ?? 0;
+          _completedTransactions++;
+        }
+      }
+
+      // Fetch previous period for growth calculation
+      final prevResponse = await supabase
+          .from('transactions')
+          .select('grand_total, status')
+          .gte('created_at', prevStartDate.toIso8601String())
+          .lt('created_at', prevEndDate.toIso8601String());
+
+      _previousRevenue = 0;
+      for (final tx in prevResponse) {
+        if (tx['status'] == 'selesai') {
+          _previousRevenue += (tx['grand_total'] as num?)?.toDouble() ?? 0;
+        }
+      }
+
+      // Build chart data (last 7 days)
+      _chartData = [];
+      final dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+      for (int i = 6; i >= 0; i--) {
+        final day = now.subtract(Duration(days: i));
+        final dayStart = DateTime(day.year, day.month, day.day);
+        final dayEnd = dayStart.add(const Duration(days: 1));
+        double dayRevenue = 0;
+        for (final tx in currentResponse) {
+          if (tx['status'] == 'selesai') {
+            final txDate = DateTime.tryParse(tx['created_at'] ?? '');
+            if (txDate != null &&
+                !txDate.isBefore(dayStart) &&
+                txDate.isBefore(dayEnd)) {
+              dayRevenue += (tx['grand_total'] as num?)?.toDouble() ?? 0;
+            }
+          }
+        }
+        _chartData.add({
+          'day': dayLabels[day.weekday - 1],
+          'amount': dayRevenue,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching report data: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-  }
-
-  int get completedTransactions {
-    switch (_selectedPeriod) {
-      case 'Hari Ini':
-        return 84;
-      case 'Minggu':
-        return 312;
-      case 'Bulan':
-        return 1248;
-      default:
-        return 84;
-    }
-  }
-
-  String get growthPercentage {
-    switch (_selectedPeriod) {
-      case 'Hari Ini':
-        return '+12%';
-      case 'Minggu':
-        return '+8%';
-      case 'Bulan':
-        return '+15%';
-      default:
-        return '+12%';
-    }
-  }
-
-  List<Map<String, dynamic>> get chartData {
-    return [
-      {'day': 'Sen', 'amount': 3200000},
-      {'day': 'Sel', 'amount': 2800000},
-      {'day': 'Rab', 'amount': 4100000},
-      {'day': 'Kam', 'amount': 3600000},
-      {'day': 'Jum', 'amount': 4800000},
-      {'day': 'Sab', 'amount': 5200000},
-      {'day': 'Min', 'amount': 4250000},
-    ];
   }
 }

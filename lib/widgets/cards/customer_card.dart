@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../models/customer.dart';
-import '../common/bottom_action_bar.dart';
 
 class CustomerCard extends StatefulWidget {
   final Customer customer;
   final bool isSelected;
   final VoidCallback? onTap;
-  final bool showVipBadge;
 
   const CustomerCard({
     super.key,
     required this.customer,
     this.isSelected = false,
     this.onTap,
-    this.showVipBadge = true,
   });
 
   @override
@@ -70,24 +67,6 @@ class _CustomerCardState extends State<CustomerCard> {
                               ),
                             ),
                           ),
-                          if (widget.showVipBadge && widget.customer.isVip)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.tertiaryContainer,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
-                              ),
-                              child: const Text(
-                                'VIP',
-                                style: TextStyle(
-                                  color: AppColors.onTertiaryContainer,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -227,15 +206,11 @@ class SimpleCustomerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (customer.isVip)
-                const Icon(Icons.stars,
-                    color: AppColors.tertiaryContainer, size: 26)
-              else
-                IconButton(
-                  icon: const Icon(Icons.more_vert,
-                      color: AppColors.onSurfaceVariant),
-                  onPressed: onMore,
-                ),
+              IconButton(
+                icon: const Icon(Icons.more_vert,
+                    color: AppColors.onSurfaceVariant),
+                onPressed: onMore,
+              ),
             ],
           ),
         ),
@@ -244,113 +219,3 @@ class SimpleCustomerCard extends StatelessWidget {
   }
 }
 
-class TransactionCard extends StatelessWidget {
-  final dynamic transaction;
-  final VoidCallback? onTap;
-
-  const TransactionCard({
-    super.key,
-    required this.transaction,
-    this.onTap,
-  });
-
-  Color _getStatusAccent(String status) {
-    switch (status.toLowerCase()) {
-      case 'selesai':
-        return AppColors.secondary;
-      case 'proses':
-        return AppColors.tertiary;
-      case 'antrian':
-        return AppColors.primary;
-      case 'terlambat':
-        return AppColors.error;
-      default:
-        return AppColors.onSurfaceVariant;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = _getStatusAccent(transaction.status);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border(
-            left: BorderSide(color: accentColor, width: 5),
-          ),
-          boxShadow: AppShadows.cardLight,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.local_laundry_service,
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.invoiceNumber,
-                      style: const TextStyle(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      transaction.customer.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  StatusChip(status: transaction.status),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatRupiah(transaction.total),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatRupiah(double amount) {
-    final formatted = amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        );
-    return 'Rp $formatted';
-  }
-}

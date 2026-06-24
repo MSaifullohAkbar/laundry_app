@@ -2,22 +2,45 @@ import 'customer.dart';
 import 'service.dart';
 
 class TransactionItem {
+  final String? id;
   final ServiceType service;
   final double quantity;
   final double subtotal;
 
   const TransactionItem({
+    this.id,
     required this.service,
     required this.quantity,
     required this.subtotal,
   });
 
+  factory TransactionItem.fromMap(Map<String, dynamic> map) {
+    return TransactionItem(
+      id: map['id'],
+      service: ServiceType.fromMap(map['services'] ?? map['service'] ?? {}),
+      quantity: (map['quantity'] as num?)?.toDouble() ?? 0,
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap(String transactionId) {
+    return {
+      'transaction_id': transactionId,
+      'service_id': service.id,
+      'quantity': quantity,
+      'price_per_unit': service.price,
+      'subtotal': subtotal,
+    };
+  }
+
   TransactionItem copyWith({
+    String? id,
     ServiceType? service,
     double? quantity,
     double? subtotal,
   }) {
     return TransactionItem(
+      id: id ?? this.id,
       service: service ?? this.service,
       quantity: quantity ?? this.quantity,
       subtotal: subtotal ?? this.subtotal,
@@ -31,14 +54,13 @@ class Transaction {
   final Customer customer;
   final List<TransactionItem> items;
   final double subtotal;
-  final double deliveryFee;
   final double discount;
   final double total;
   final String status; // 'antrian' | 'proses' | 'selesai' | 'terlambat' | 'batal'
   final bool isPaid;
   final DateTime createdAt;
   final DateTime? estimatedDone;
-  final String cashierName;
+  final String? paymentMethodId;
 
   const Transaction({
     required this.id,
@@ -46,15 +68,50 @@ class Transaction {
     required this.customer,
     required this.items,
     required this.subtotal,
-    this.deliveryFee = 0,
     this.discount = 0,
     required this.total,
     required this.status,
     this.isPaid = false,
     required this.createdAt,
     this.estimatedDone,
-    required this.cashierName,
+    this.paymentMethodId,
   });
+
+  factory Transaction.fromMap(Map<String, dynamic> map) {
+    final itemsData = map['transaction_items'] as List<dynamic>? ?? [];
+    return Transaction(
+      id: map['id'],
+      invoiceNumber: map['invoice_number'] ?? '',
+      customer: Customer.fromMap(map['customers'] ?? {}),
+      items: itemsData
+          .map((i) => TransactionItem.fromMap(i as Map<String, dynamic>))
+          .toList(),
+      subtotal: (map['total_amount'] as num?)?.toDouble() ?? 0,
+      discount: (map['discount'] as num?)?.toDouble() ?? 0,
+      total: (map['grand_total'] as num?)?.toDouble() ?? 0,
+      status: map['status'] ?? 'antrian',
+      isPaid: map['payment_status'] == 'paid',
+      createdAt: DateTime.tryParse(map['created_at'] ?? '') ?? DateTime.now(),
+      estimatedDone: map['estimated_completion'] != null
+          ? DateTime.tryParse(map['estimated_completion'])
+          : null,
+      paymentMethodId: map['payment_method_id'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'invoice_number': invoiceNumber,
+      'customer_id': customer.id,
+      'status': status,
+      'payment_status': isPaid ? 'paid' : 'unpaid',
+      'total_amount': subtotal,
+      'discount': discount,
+      'grand_total': total,
+      'estimated_completion': estimatedDone?.toIso8601String(),
+      'payment_method_id': paymentMethodId,
+    };
+  }
 
   Transaction copyWith({
     String? id,
@@ -62,14 +119,13 @@ class Transaction {
     Customer? customer,
     List<TransactionItem>? items,
     double? subtotal,
-    double? deliveryFee,
     double? discount,
     double? total,
     String? status,
     bool? isPaid,
     DateTime? createdAt,
     DateTime? estimatedDone,
-    String? cashierName,
+    String? paymentMethodId,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -77,129 +133,13 @@ class Transaction {
       customer: customer ?? this.customer,
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
-      deliveryFee: deliveryFee ?? this.deliveryFee,
       discount: discount ?? this.discount,
       total: total ?? this.total,
       status: status ?? this.status,
       isPaid: isPaid ?? this.isPaid,
       createdAt: createdAt ?? this.createdAt,
       estimatedDone: estimatedDone ?? this.estimatedDone,
-      cashierName: cashierName ?? this.cashierName,
+      paymentMethodId: paymentMethodId ?? this.paymentMethodId,
     );
   }
 }
-
-// Dummy transactions
-final List<Transaction> dummyTransactions = [
-  Transaction(
-    id: 't1',
-    invoiceNumber: 'INV-20240421-001',
-    customer: dummyCustomers[0],
-    items: [
-      TransactionItem(
-        service: dummyServices[0],
-        quantity: 3.5,
-        subtotal: 42000,
-      ),
-    ],
-    subtotal: 42000,
-    deliveryFee: 10000,
-    discount: 0,
-    total: 52000,
-    status: 'selesai',
-    isPaid: true,
-    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    estimatedDone: DateTime.now().subtract(const Duration(hours: 1)),
-    cashierName: 'Admin',
-  ),
-  Transaction(
-    id: 't2',
-    invoiceNumber: 'INV-20240421-002',
-    customer: dummyCustomers[1],
-    items: [
-      TransactionItem(
-        service: dummyServices[1],
-        quantity: 2.0,
-        subtotal: 40000,
-      ),
-      TransactionItem(
-        service: dummyServices[4],
-        quantity: 1,
-        subtotal: 45000,
-      ),
-    ],
-    subtotal: 85000,
-    deliveryFee: 0,
-    discount: 5000,
-    total: 80000,
-    status: 'proses',
-    isPaid: false,
-    createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-    estimatedDone: DateTime.now().add(const Duration(hours: 7)),
-    cashierName: 'Admin',
-  ),
-  Transaction(
-    id: 't3',
-    invoiceNumber: 'INV-20240421-003',
-    customer: dummyCustomers[2],
-    items: [
-      TransactionItem(
-        service: dummyServices[0],
-        quantity: 5.0,
-        subtotal: 60000,
-      ),
-    ],
-    subtotal: 60000,
-    deliveryFee: 10000,
-    discount: 0,
-    total: 70000,
-    status: 'antrian',
-    isPaid: true,
-    createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-    estimatedDone: DateTime.now().add(const Duration(days: 2)),
-    cashierName: 'Admin',
-  ),
-  Transaction(
-    id: 't4',
-    invoiceNumber: 'INV-20240420-001',
-    customer: dummyCustomers[3],
-    items: [
-      TransactionItem(
-        service: dummyServices[2],
-        quantity: 4.0,
-        subtotal: 28000,
-      ),
-    ],
-    subtotal: 28000,
-    deliveryFee: 0,
-    discount: 0,
-    total: 28000,
-    status: 'terlambat',
-    isPaid: false,
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    estimatedDone: DateTime.now().subtract(const Duration(days: 1)),
-    cashierName: 'Admin',
-  ),
-  Transaction(
-    id: 't5',
-    invoiceNumber: 'INV-20240420-002',
-    customer: dummyCustomers[4],
-    items: [
-      TransactionItem(
-        service: dummyServices[6],
-        quantity: 2,
-        subtotal: 70000,
-      ),
-    ],
-    subtotal: 70000,
-    deliveryFee: 15000,
-    discount: 0,
-    total: 85000,
-    status: 'selesai',
-    isPaid: true,
-    createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-    estimatedDone:
-        DateTime.now().subtract(const Duration(hours: 12)),
-    cashierName: 'Admin',
-  ),
-];

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/common/floating_search_bar.dart';
-import '../../widgets/common/bottom_action_bar.dart';
 import '../../widgets/cards/customer_card.dart';
 
 class CustomerListScreen extends StatefulWidget {
@@ -74,9 +73,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 final customers = prov.filteredCustomers;
                 return ListView.separated(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 72, 16, 120),
+                  // Extra bottom padding so last card isn't hidden by bottom bar
+                  padding: const EdgeInsets.fromLTRB(16, 72, 16, 140),
                   itemCount: customers.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (ctx, i) => SimpleCustomerCard(
                     customer: customers[i],
                     onTap: () {},
@@ -85,6 +86,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               },
             ),
           ),
+
           // Overlapping search bar
           Positioned(
             top: kToolbarHeight + MediaQuery.of(context).padding.top + 60,
@@ -98,16 +100,55 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               ),
             ),
           ),
+
+          // Fixed bottom button "Tambah Pelanggan"
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: BottomActionBar(
-              rightAction: GradientButton(
-                label: 'Tambah Pelanggan Baru',
-                icon: Icons.person_add,
-                isFullWidth: true,
-                onPressed: () => context.go('/customers/add'),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: GestureDetector(
+                onTap: () => context.push('/customers/add'),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    boxShadow: AppShadows.primaryButton,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person_add_alt_1,
+                          color: Colors.white, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'Tambah Pelanggan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
