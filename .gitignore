@@ -57,6 +57,8 @@ android/.kotlin/
 # File test sementara
 test_login.dart
 test_status.dart
+test_api.dart
+test_query.dart
 lib/test_supabase.dart
 body.json
 

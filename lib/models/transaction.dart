@@ -56,11 +56,14 @@ class Transaction {
   final double subtotal;
   final double discount;
   final double total;
-  final String status; // 'antrian' | 'proses' | 'selesai' | 'terlambat' | 'batal'
+  final String
+  status; // 'antrian' | 'proses' | 'selesai' | 'terlambat' | 'batal'
   final bool isPaid;
   final DateTime createdAt;
   final DateTime? estimatedDone;
   final String? paymentMethodId;
+  final String? kasirName;
+  final String? userId;
 
   const Transaction({
     required this.id,
@@ -75,6 +78,8 @@ class Transaction {
     required this.createdAt,
     this.estimatedDone,
     this.paymentMethodId,
+    this.kasirName,
+    this.userId,
   });
 
   factory Transaction.fromMap(Map<String, dynamic> map) {
@@ -96,6 +101,10 @@ class Transaction {
           ? DateTime.tryParse(map['estimated_completion'])
           : null,
       paymentMethodId: map['payment_method_id'],
+      userId: map['user_id'],
+      kasirName: map['users'] != null 
+          ? (map['users']['full_name'] ?? map['users']['email']?.split('@')?.first) 
+          : null,
     );
   }
 
@@ -126,6 +135,8 @@ class Transaction {
     DateTime? createdAt,
     DateTime? estimatedDone,
     String? paymentMethodId,
+    String? kasirName,
+    String? userId,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -140,6 +151,8 @@ class Transaction {
       createdAt: createdAt ?? this.createdAt,
       estimatedDone: estimatedDone ?? this.estimatedDone,
       paymentMethodId: paymentMethodId ?? this.paymentMethodId,
+      kasirName: kasirName ?? this.kasirName,
+      userId: userId ?? this.userId,
     );
   }
 }

@@ -430,6 +430,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
+    final oldPasswordCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     final confirmCtrl = TextEditingController();
     bool isLoading = false;
@@ -445,14 +446,22 @@ class _AccountScreenState extends State<AccountScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: passwordCtrl,
+                  controller: oldPasswordCtrl,
                   obscureText: obscureText,
                   decoration: InputDecoration(
-                    labelText: 'Password Baru',
+                    labelText: 'Password Lama',
                     suffixIcon: IconButton(
                       icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
                       onPressed: () => setState(() => obscureText = !obscureText),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordCtrl,
+                  obscureText: obscureText,
+                  decoration: const InputDecoration(
+                    labelText: 'Password Baru',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -472,12 +481,20 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               ElevatedButton(
                 onPressed: isLoading ? null : () async {
+                  final oldPassword = oldPasswordCtrl.text;
                   final newPassword = passwordCtrl.text;
                   final confirmPassword = confirmCtrl.text;
 
+                  if (oldPassword.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Masukkan password lama terlebih dahulu')),
+                    );
+                    return;
+                  }
+
                   if (newPassword.isEmpty || newPassword.length < 6) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password minimal 6 karakter')),
+                      const SnackBar(content: Text('Password baru minimal 6 karakter')),
                     );
                     return;
                   }
@@ -491,7 +508,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   setState(() => isLoading = true);
                   try {
-                    await context.read<AuthProvider>().updatePassword(newPassword);
+                    await context.read<AuthProvider>().updatePassword(oldPassword, newPassword);
                     if (context.mounted) {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -501,8 +518,12 @@ class _AccountScreenState extends State<AccountScreen> {
                   } catch (e) {
                     setState(() => isLoading = false);
                     if (context.mounted) {
+                      String errorMessage = e.toString();
+                      if (errorMessage.startsWith('Exception: ')) {
+                        errorMessage = errorMessage.substring(11);
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Gagal mengubah password: $e')),
+                        SnackBar(content: Text('Gagal mengubah password: $errorMessage')),
                       );
                     }
                   }

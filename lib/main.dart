@@ -31,7 +31,6 @@ void main() async {
   runApp(const LaundryKuApp());
 }
 
-
 class LaundryKuApp extends StatelessWidget {
   const LaundryKuApp({super.key});
 
@@ -48,7 +47,9 @@ class LaundryKuApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SawProvider()),
         ChangeNotifierProvider(create: (_) => PaymentMethodProvider()),
         ChangeNotifierProvider(create: (_) => StoreSettingsProvider()),
-        ChangeNotifierProvider(create: (_) => BluetoothPrinterProvider()..loadSettings()),
+        ChangeNotifierProvider(
+          create: (_) => BluetoothPrinterProvider()..loadSettings(),
+        ),
       ],
       child: const LaundryApp(),
     );

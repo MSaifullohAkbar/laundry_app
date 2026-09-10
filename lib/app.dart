@@ -27,9 +27,13 @@ import 'screens/payment_method/payment_method_screen.dart';
 import 'screens/payment_method/add_payment_method_screen.dart';
 
 import 'package:provider/provider.dart';
+import 'package:app_links/app_links.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
+import 'screens/report/cashier_report_screen.dart';
+import 'screens/report/customer_report_screen.dart';
 
 GoRouter createAppRouter(AuthProvider authProvider) {
   // Daftar route yang hanya bisa diakses admin
@@ -53,15 +57,22 @@ GoRouter createAppRouter(AuthProvider authProvider) {
     refreshListenable: authProvider,
     redirect: (context, state) {
       final isLoggedIn = authProvider.isAuthenticated;
-      final isGoingToAuth = state.matchedLocation == '/login' || state.matchedLocation == '/forgot-password';
+      final isPasswordRecovery = authProvider.isPasswordRecovery;
       final currentPath = state.matchedLocation;
+      final isGoingToAuth = currentPath == '/login' || currentPath == '/forgot-password';
+      final isGoingToReset = currentPath == '/reset-password';
 
-      if (!isLoggedIn && !isGoingToAuth) {
+      // Jika sedang dalam mode recovery, arahkan ke halaman set password baru
+      if (isPasswordRecovery && !isGoingToReset) {
+        return '/reset-password';
+      }
+
+      if (!isLoggedIn && !isGoingToAuth && !isGoingToReset) {
         // Redirect unauthenticated users to login
         return '/login';
       }
 
-      if (isLoggedIn && isGoingToAuth) {
+      if (isLoggedIn && isGoingToAuth && !isPasswordRecovery) {
         // Redirect authenticated users away from login
         return '/';
       }
@@ -90,6 +101,11 @@ GoRouter createAppRouter(AuthProvider authProvider) {
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
+      ),
+
       GoRoute(
         path: '/',
         builder: (context, state) => const DashboardScreen(),
@@ -163,6 +179,14 @@ GoRouter createAppRouter(AuthProvider authProvider) {
         builder: (context, state) => const ExcelExportScreen(),
       ),
       GoRoute(
+        path: '/reports/cashier',
+        builder: (context, state) => const CashierReportScreen(),
+      ),
+      GoRoute(
+        path: '/reports/customers',
+        builder: (context, state) => const CustomerReportScreen(),
+      ),
+      GoRoute(
         path: '/parfum/add',
         builder: (context, state) => const AddParfumScreen(),
       ),
@@ -206,15 +230,45 @@ class LaundryApp extends StatefulWidget {
 class _LaundryAppState extends State<LaundryApp> {
   late final GoRouter _router;
   Timer? _inactivityTimer;
-  static const int _inactivityTimeoutMinutes = 15; // Log out setelah 15 menit tidak aktif
+  StreamSubscription? _deepLinkSubscription;
+  static const int _inactivityTimeoutMinutes = 15;
 
   @override
   void initState() {
     super.initState();
-    // Watch is not allowed in initState, use read
     final authProvider = context.read<AuthProvider>();
     _router = createAppRouter(authProvider);
     _resetInactivityTimer();
+    _initDeepLinks();
+  }
+
+  /// Menangkap Deep Link yang masuk (link reset password dari email)
+  Future<void> _initDeepLinks() async {
+    final appLinks = AppLinks();
+
+    // Tangkap link yang membuka app (cold start)
+    try {
+      final initialLink = await appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial deep link: $e');
+    }
+
+    // Tangkap link ketika app sudah berjalan (warm start)
+    _deepLinkSubscription = appLinks.uriLinkStream.listen(
+      (uri) => _handleDeepLink(uri),
+      onError: (err) => debugPrint('Deep link error: $err'),
+    );
+  }
+
+  void _handleDeepLink(Uri uri) {
+    debugPrint('Deep link received: $uri');
+    // Supabase mengirim token melalui fragment (#access_token=...&type=recovery)
+    // supabase_flutter secara otomatis memparsing fragment dan memicu event passwordRecovery
+    // via onAuthStateChange. Kita tidak perlu parsing manual.
+    // Router sudah diatur untuk redirect ke /reset-password saat isPasswordRecovery == true.
   }
 
   void _resetInactivityTimer() {
@@ -232,6 +286,7 @@ class _LaundryAppState extends State<LaundryApp> {
   @override
   void dispose() {
     _inactivityTimer?.cancel();
+    _deepLinkSubscription?.cancel();
     super.dispose();
   }
 

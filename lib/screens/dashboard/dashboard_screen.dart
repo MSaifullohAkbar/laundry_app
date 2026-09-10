@@ -343,7 +343,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _MenuItem('Pelanggan', Icons.groups, AppColors.primaryFixedDim, '/customers'),
       _MenuItem('Metode Bayar', Icons.account_balance_wallet,
           AppColors.secondaryFixed, '/payment-methods'),
-      _MenuItem('Pengeluaran', Icons.payments, AppColors.errorContainer, ''),
       _MenuItem('Pengaturan', Icons.settings,
           AppColors.surfaceContainerHigh, '/settings'),
     ];

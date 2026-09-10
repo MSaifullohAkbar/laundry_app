@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/app_theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/common/gradient_app_bar.dart';
 
 class ReportMenuScreen extends StatelessWidget {
@@ -8,6 +10,8 @@ class ReportMenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = context.select<AuthProvider, bool>((p) => p.currentUser?.isAdmin ?? false);
+
     final menus = [
       _ReportMenu(
         'Transaksi',
@@ -16,19 +20,13 @@ class ReportMenuScreen extends StatelessWidget {
         'Laporan transaksi harian',
         '/reports/transactions',
       ),
-      _ReportMenu(
-        'Pengeluaran',
-        Icons.payments,
-        AppColors.tertiaryContainer,
-        'Laporan pengeluaran',
-        '',
-      ),
+
       _ReportMenu(
         'Pelanggan',
         Icons.group,
         AppColors.secondaryContainer,
-        'Laporan pelanggan',
-        '',
+        'Statistik pelanggan',
+        '/reports/customers',
       ),
       _ReportMenu(
         'Excel Export',
@@ -37,13 +35,14 @@ class ReportMenuScreen extends StatelessWidget {
         'Unduh laporan Excel',
         '/reports/excel-export',
       ),
-      _ReportMenu(
-        'Kasir',
-        Icons.point_of_sale,
-        AppColors.secondaryFixed,
-        'Laporan per kasir',
-        '',
-      ),
+      if (isAdmin)
+        _ReportMenu(
+          'Kasir',
+          Icons.point_of_sale,
+          AppColors.secondaryFixed,
+          'Laporan per kasir',
+          '/reports/cashier',
+        ),
       _ReportMenu(
         'Pelanggan Terbaik',
         Icons.emoji_events,

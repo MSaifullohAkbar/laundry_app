@@ -89,40 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo or Icon
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.local_laundry_service,
-                    size: 50,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 32),
+
 
                 // Welcome Text
                 const Text(
-                  'Selamat Datang',
+                  'Selamat Datang!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 const Text(
                   'Silakan login untuk mengakses sistem Kasir LaundryKu',
                   textAlign: TextAlign.center,
@@ -131,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 40),
 
                 // Form Container
                 Container(

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warna biru utama LaundryKu -->
+    <color name="laundryku_blue">#1A9FD4</color>
+	<color name="ic_launcher_background">#1A9FD4</color>
+</resources>

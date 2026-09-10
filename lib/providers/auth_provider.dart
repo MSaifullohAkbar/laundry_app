@@ -7,11 +7,14 @@ import '../models/user.dart';
 class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isAuthenticated = false;
+  bool _isPasswordRecovery = false;
   AppUser? _currentUser;
   StreamSubscription? _authStateSubscription;
 
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
+  /// True jika user sedang dalam sesi password-recovery (dari link email)
+  bool get isPasswordRecovery => _isPasswordRecovery;
   AppUser? get currentUser => _currentUser;
   
   // Helper getters untuk role
@@ -37,15 +40,33 @@ class AuthProvider extends ChangeNotifier {
 
   void _setupAuthListener() {
     _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) async {
+      final event = data.event;
       final session = data.session;
       final newAuthState = session != null;
-      
+
+      // Deteksi event password-recovery dari link email
+      if (event == AuthChangeEvent.passwordRecovery) {
+        _isPasswordRecovery = true;
+        _isAuthenticated = true; // Supabase memberi temporary session
+        notifyListeners();
+        return;
+      }
+
+      // Setelah password berhasil diupdate, reset flag recovery
+      if (event == AuthChangeEvent.userUpdated && _isPasswordRecovery) {
+        _isPasswordRecovery = false;
+        _isAuthenticated = false;
+        _currentUser = null;
+        notifyListeners();
+        return;
+      }
+
       if (_isAuthenticated != newAuthState) {
         _isAuthenticated = newAuthState;
         
-        if (_isAuthenticated) {
+        if (_isAuthenticated && !_isPasswordRecovery) {
           await _fetchUserProfile();
-        } else {
+        } else if (!_isAuthenticated) {
           _currentUser = null;
         }
         
@@ -138,9 +159,35 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim());
+      // redirectTo harus sesuai dengan scheme yang didaftarkan di AndroidManifest
+      await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: 'laundryku://reset-password',
+      );
     } catch (e) {
       debugPrint('Error resetting password: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Mengeset password baru — digunakan setelah user membuka link reset dari email.
+  /// Tidak memerlukan password lama karena Supabase sudah memberi temporary session.
+  Future<void> setNewPassword(String newPassword) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      // Setelah berhasil, paksa logout agar user login ulang dengan password baru
+      _isPasswordRecovery = false;
+      await supabase.auth.signOut();
+    } catch (e) {
+      debugPrint('Error setting new password: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -163,14 +210,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updatePassword(String newPassword) async {
+  Future<void> updatePassword(String oldPassword, String newPassword) async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      final email = supabase.auth.currentUser?.email;
+      if (email == null) throw Exception('Email pengguna tidak ditemukan');
+
+      // Verifikasi password lama dengan mencoba re-authenticate
+      await supabase.auth.signInWithPassword(
+        email: email,
+        password: oldPassword,
+      );
+
+      // Jika berhasil verifikasi, update ke password baru
       await supabase.auth.updateUser(
         UserAttributes(password: newPassword),
       );
+    } on AuthException catch (e) {
+      debugPrint('Auth error updating password: $e');
+      if (e.message.toLowerCase().contains('invalid login credentials')) {
+        throw Exception('Password lama salah');
+      }
+      rethrow;
     } catch (e) {
       debugPrint('Error updating password: $e');
       rethrow;

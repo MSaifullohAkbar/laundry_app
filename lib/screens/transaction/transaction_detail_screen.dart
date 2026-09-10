@@ -13,10 +13,7 @@ import '../../widgets/common/bottom_action_bar.dart';
 class TransactionDetailScreen extends StatelessWidget {
   final String transactionId;
 
-  const TransactionDetailScreen({
-    super.key,
-    required this.transactionId,
-  });
+  const TransactionDetailScreen({super.key, required this.transactionId});
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +26,7 @@ class TransactionDetailScreen extends StatelessWidget {
           title: 'Detail Transaksi',
           onBack: () => context.go('/'),
         ),
-        body: const Center(
-          child: Text('Transaksi tidak ditemukan'),
-        ),
+        body: const Center(child: Text('Transaksi tidak ditemukan')),
       );
     }
 
@@ -93,10 +88,7 @@ class TransactionDetailScreen extends StatelessWidget {
         children: [
           Text(
             tx.customer.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 24,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
           ),
           const SizedBox(height: 4),
           Row(
@@ -142,10 +134,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primaryContainer,
-                        ],
+                        colors: [AppColors.primary, AppColors.primaryContainer],
                       ),
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -167,13 +156,36 @@ class TransactionDetailScreen extends StatelessWidget {
                             fontSize: 14,
                           ),
                         ),
-                        Text(
-                          '${item.quantity} ${item.service.unit}',
-                          style: const TextStyle(
-                            color: AppColors.onSurfaceVariant,
-                            fontSize: 13,
+                        if (item.service.name.toLowerCase().contains('kering') || item.service.name.toLowerCase().contains('basah'))
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item.quantity} ${item.service.unit}',
+                                style: const TextStyle(
+                                  color: AppColors.onSurfaceVariant,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                '*(1 mesin max 8kg tetap dihitung 8kg)',
+                                style: TextStyle(
+                                  color: AppColors.tertiary,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Text(
+                            '${item.quantity} ${item.service.unit}',
+                            style: const TextStyle(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -235,10 +247,7 @@ class TransactionDetailScreen extends StatelessWidget {
             children: [
               const Text(
                 'Total',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
               ),
               const Spacer(),
               Text(
@@ -274,8 +283,8 @@ class TransactionDetailScreen extends StatelessWidget {
                   child: Text(
                     tx.isPaid
                         ? paymentMethodName == null
-                            ? 'Sudah Lunas'
-                            : 'Sudah Lunas • $paymentMethodName'
+                              ? 'Sudah Lunas'
+                              : 'Sudah Lunas • $paymentMethodName'
                         : 'Belum Lunas',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -396,10 +405,7 @@ class TransactionDetailScreen extends StatelessWidget {
             children: [
               const Text(
                 'Catat Metode Pembayaran',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -427,10 +433,10 @@ class TransactionDetailScreen extends StatelessWidget {
                       m.type == 'cash'
                           ? Icons.payments
                           : m.type == 'transfer'
-                              ? Icons.account_balance
-                              : m.type == 'ewallet'
-                                  ? Icons.phone_android
-                                  : Icons.qr_code,
+                          ? Icons.account_balance
+                          : m.type == 'ewallet'
+                          ? Icons.phone_android
+                          : Icons.qr_code,
                       color: AppColors.primary,
                     ),
                     title: Text(
@@ -450,9 +456,7 @@ class TransactionDetailScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                'Pembayaran dicatat: ${m.name}',
-                              ),
+                              content: Text('Pembayaran dicatat: ${m.name}'),
                               backgroundColor: AppColors.secondary,
                             ),
                           );
@@ -478,7 +482,10 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  String? _getPaymentMethodName(dynamic tx, PaymentMethodProvider paymentProvider) {
+  String? _getPaymentMethodName(
+    dynamic tx,
+    PaymentMethodProvider paymentProvider,
+  ) {
     if (!tx.isPaid || tx.paymentMethodId == null) return null;
 
     try {
@@ -533,11 +540,7 @@ class TransactionDetailScreen extends StatelessWidget {
       ),
       child: Text(
         status.substring(0, 1).toUpperCase() + status.substring(1),
-        style: TextStyle(
-          color: fg,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -561,10 +564,7 @@ class TransactionDetailScreen extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               textAlign: TextAlign.right,
             ),
           ),
@@ -591,10 +591,7 @@ class TransactionDetailScreen extends StatelessWidget {
           ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primaryContainer.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
@@ -630,10 +627,7 @@ class TransactionDetailScreen extends StatelessWidget {
           const Spacer(),
           Text(
             FormatHelper.formatRupiah(amount),
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ],
       ),
@@ -833,7 +827,8 @@ class TransactionDetailScreen extends StatelessWidget {
                             const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final device = printerProvider.devices[index];
-                          final isConnecting = printerProvider.isConnecting &&
+                          final isConnecting =
+                              printerProvider.isConnecting &&
                               printerProvider.connectedMacAddress ==
                                   device.macAdress;
 
@@ -868,24 +863,26 @@ class TransactionDetailScreen extends StatelessWidget {
                                     )
                                   : TextButton(
                                       onPressed: () async {
-                                        final success =
-                                            await printerProvider.connect(
-                                          device.macAdress,
-                                          device.name,
-                                        );
+                                        final success = await printerProvider
+                                            .connect(
+                                              device.macAdress,
+                                              device.name,
+                                            );
 
                                         if (success) {
-                                          await printerProvider.printTransaction(
-                                            tx,
-                                            storeSettings,
-                                            paymentMethodName:
-                                                paymentMethodName,
-                                          );
+                                          await printerProvider
+                                              .printTransaction(
+                                                tx,
+                                                storeSettings,
+                                                paymentMethodName:
+                                                    paymentMethodName,
+                                              );
 
                                           if (ctx.mounted) {
                                             Navigator.pop(ctx);
-                                            ScaffoldMessenger.of(ctx)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              ctx,
+                                            ).showSnackBar(
                                               const SnackBar(
                                                 content: Text(
                                                   'Printer terhubung & struk sedang dicetak!',
@@ -897,8 +894,9 @@ class TransactionDetailScreen extends StatelessWidget {
                                           }
                                         } else {
                                           if (ctx.mounted) {
-                                            ScaffoldMessenger.of(ctx)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              ctx,
+                                            ).showSnackBar(
                                               const SnackBar(
                                                 content: Text(
                                                   'Koneksi printer gagal!',

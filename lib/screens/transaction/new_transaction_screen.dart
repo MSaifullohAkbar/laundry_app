@@ -47,10 +47,13 @@ class NewTransactionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Total Harga',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant)),
+                      const Text(
+                        'Total Harga',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
                       Text(
                         FormatHelper.formatRupiah(provider.cartSubtotal),
                         style: const TextStyle(
@@ -68,7 +71,9 @@ class NewTransactionScreen extends StatelessWidget {
                     onPressed: provider.canCheckout
                         ? () async {
                             try {
-                              await provider.completeTransaction(null); // Temporarily null, can build payment picker later
+                              await provider.completeTransaction(
+                                null,
+                              ); // Temporarily null, can build payment picker later
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -101,7 +106,9 @@ class NewTransactionScreen extends StatelessWidget {
   }
 
   Widget _buildCustomerCard(
-      BuildContext context, TransactionProvider provider) {
+    BuildContext context,
+    TransactionProvider provider,
+  ) {
     final customer = provider.cartCustomer;
 
     return GestureDetector(
@@ -124,12 +131,16 @@ class NewTransactionScreen extends StatelessWidget {
                   ? Text(
                       customer.initials,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     )
-                  : const Icon(Icons.person,
-                      color: AppColors.onSurfaceVariant, size: 26),
+                  : const Icon(
+                      Icons.person,
+                      color: AppColors.onSurfaceVariant,
+                      size: 26,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -150,15 +161,15 @@ class NewTransactionScreen extends StatelessWidget {
                     Text(
                       customer.phone,
                       style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.onSurfaceVariant),
+                        fontSize: 13,
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
                 ],
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.secondaryContainer.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -179,7 +190,9 @@ class NewTransactionScreen extends StatelessWidget {
   }
 
   Widget _buildOrderSection(
-      BuildContext context, TransactionProvider provider) {
+    BuildContext context,
+    TransactionProvider provider,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -194,7 +207,9 @@ class NewTransactionScreen extends StatelessWidget {
               onTap: () => context.push('/transaction/pick-service'),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -244,8 +259,11 @@ class NewTransactionScreen extends StatelessWidget {
                 color: AppColors.primaryFixed,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.local_laundry_service,
-                  color: AppColors.primary, size: 40),
+              child: const Icon(
+                Icons.local_laundry_service,
+                color: AppColors.primary,
+                size: 40,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -260,10 +278,7 @@ class NewTransactionScreen extends StatelessWidget {
             const Text(
               'Tambahkan layanan laundry untuk memulai transaksi',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
             ),
           ],
         ),
@@ -291,31 +306,64 @@ class NewTransactionScreen extends StatelessWidget {
                   color: AppColors.primaryFixed,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.local_laundry_service,
-                    color: AppColors.primary, size: 22),
+                child: const Icon(
+                  Icons.local_laundry_service,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.service.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
                     Text(
-                      '${item.quantity} ${item.service.unit} × Rp ${FormatHelper.formatSimplePrice(item.service.price)}',
+                      item.service.name,
                       style: const TextStyle(
-                          color: AppColors.onSurfaceVariant, fontSize: 13),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
+                    if (item.service.name.toLowerCase().contains('kering') || item.service.name.toLowerCase().contains('basah'))
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${item.quantity} ${item.service.unit} × Rp ${FormatHelper.formatSimplePrice(item.service.price)}',
+                            style: const TextStyle(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            '*Info: 1 mesin max 8kg tetap dihitung 8kg.',
+                            style: TextStyle(
+                              color: AppColors.tertiary,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        '${item.quantity} ${item.service.unit} × Rp ${FormatHelper.formatSimplePrice(item.service.price)}',
+                        style: const TextStyle(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
                   ],
                 ),
               ),
               Text(
                 FormatHelper.formatRupiah(item.subtotal),
                 style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: AppColors.primary),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: AppColors.primary,
+                ),
               ),
             ],
           ),
